@@ -56,7 +56,7 @@ public class BeanMachineAnimatic extends Pane implements generatesGraphics{
     private Button decreaseChambers = new Button("Less bounces");
     private Button playAnim = new Button("Run animation");
     private Button stopAllAnims = new Button("Stop all");
-
+    private double dropSpeed = 0.15;
     private Label chambersLabel = new Label("Bounces: ");
     private Label chambersCountLabel = new Label();
     private Label ballsLabel = new Label("Balls: ");
@@ -67,6 +67,7 @@ public class BeanMachineAnimatic extends Pane implements generatesGraphics{
     private BigDecimal[][] multipliers = new BigDecimal[9][];
 
     private HBox functionalityBar = new HBox();
+    private Timeline partitioningTimeline;
 
     private Pane beanMachineContainer = new Pane();
 
@@ -92,6 +93,7 @@ public class BeanMachineAnimatic extends Pane implements generatesGraphics{
         resetCash.setLayoutX(startX+startX*0.8-20);
         resetCash.setLayoutY(parentHeight/3);
         this.startY = this.ballSize*2+10;
+        this.partitioningTimeline = new Timeline();
         multipliersSetup();
         populateMultipliers();
         initialArcY = startY+38+obstacleDistanceY;
@@ -197,7 +199,7 @@ public class BeanMachineAnimatic extends Pane implements generatesGraphics{
     }
 
     private void generateChambers(double initialX, double xOffset, double yCoord, double obstacleDistance) {
-        stopAnimations();
+        stopAnimations(partitioningTimeline);
         Line floor = new Line(initialX-obstacleDistance, yCoord, (initialX + xOffset * 2)+obstacleDistance, yCoord);
         beanMachineContainer.getChildren().add(floor);
         for (double i = initialX-obstacleDistance; i <= (initialX + xOffset * 2)+obstacleDistance; i += obstacleDistance) {
@@ -218,10 +220,8 @@ public class BeanMachineAnimatic extends Pane implements generatesGraphics{
         }
     }
     private void generateBallsAndRunAnimation(){
-        stopAnimations();
+        stopAnimations(partitioningTimeline);
         BeanMachineSimulation results = new BeanMachineSimulation(bounces,ballCount);
-        beans.clear();
-        beanAnimations.clear();
         for(int i = 0; i<ballCount;i++){
             beans.add(new Circle(ballSize, new Color(Math.random(),Math.random(),Math.random(),1)));
             beans.get(i).setCenterX(startX);
@@ -234,7 +234,7 @@ public class BeanMachineAnimatic extends Pane implements generatesGraphics{
         final int[] anims = {0};
         playAnim.setDisable(true);
 
-        Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(0.25), event -> {
+        partitioningTimeline = new Timeline(new KeyFrame(Duration.seconds(dropSpeed), event -> {
             if (anims[0] <ballCount){
                 beanAnimations.get(anims[0]).playAnimation();
                 anims[0]++;
@@ -242,8 +242,9 @@ public class BeanMachineAnimatic extends Pane implements generatesGraphics{
                 playAnim.setDisable(false);
             }
         }));
-        timeline.setCycleCount(ballCount+1); // Run the timeline for the number of balls plus one more to handle animation end
-        timeline.play();
+        partitioningTimeline.setCycleCount(ballCount+1); // Run the timeline for the number of balls plus one more to handle animation end
+        partitioningTimeline.play();
+        playAnim.setDisable(false);
     }
 
 
@@ -294,12 +295,13 @@ public class BeanMachineAnimatic extends Pane implements generatesGraphics{
             moneys.setText("1000");
         });
         stopAllAnims.setOnMouseClicked(e -> {
-            stopAnimations();
+            stopAnimations(partitioningTimeline);
         });
 
     }
 
-    public void stopAnimations(){
+    public void stopAnimations(Timeline partitioningTimeline){
+        partitioningTimeline.stop();
         for (BeanArcTransition anim :
                 beanAnimations) {
             anim.getBeanTransition().stop();
